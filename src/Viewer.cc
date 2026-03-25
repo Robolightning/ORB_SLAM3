@@ -19,6 +19,7 @@
 
 #include "Viewer.h"
 #include <pangolin/pangolin.h>
+#include <opencv2/highgui.hpp>
 
 #include <mutex>
 

@@ -1,0 +1,14 @@
+{
+  "name": "orb-slam3",
+  "version-string": "1.0.0",
+  "dependencies": [
+    "opencv4",
+    "eigen3",
+    "pangolin",
+    "sophus",
+    "g2o",
+    "dbow2",
+    "openssl",
+    "boost-serialization"
+  ]
+}
