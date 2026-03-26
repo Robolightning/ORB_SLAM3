@@ -18,7 +18,6 @@
 
 
 #include "Tracking.h"
-
 #include "ORBmatcher.h"
 #include "FrameDrawer.h"
 #include "Converter.h"

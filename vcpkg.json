@@ -2,9 +2,16 @@
   "name": "orb-slam3",
   "version-string": "1.0.0",
   "dependencies": [
-    "opencv4",
+    {
+      "name": "opencv4",
+      "features": ["highgui", "calib3d"],
+      "default-features": false
+    },
     "eigen3",
-    "pangolin",
+    {
+      "name": "pangolin",
+      "default-features": false
+    },
     "sophus",
     "g2o",
     "dbow2",

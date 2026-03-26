@@ -16,6 +16,9 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+
+#include <unistd.h>
+
 #include "Settings.h"
 
 #include "CameraModels/Pinhole.h"

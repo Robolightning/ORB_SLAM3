@@ -1,3 +1,6 @@
+# Ignore all
+*
+
 # Unignore all with extensions
 !*.*
 
@@ -63,6 +66,7 @@ Thirdparty/g2o/config.h
 Thirdparty/g2o/lib/
 Vocabulary/ORBvoc.txt
 build/
+out/
 vcpkg_installed/
 
 lib/

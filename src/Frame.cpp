@@ -16,6 +16,9 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+
+#include <unistd.h>
+
 #include "Frame.h"
 
 #include "G2oTypes.h"

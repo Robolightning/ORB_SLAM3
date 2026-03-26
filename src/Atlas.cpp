@@ -16,9 +16,9 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 #include "Atlas.h"
 #include "Viewer.h"
-
 #include "GeometricCamera.h"
 #include "Pinhole.h"
 #include "KannalaBrandt8.h"

@@ -22,7 +22,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 
-#include<mutex>
+#include <mutex>
 
 using namespace std;
 

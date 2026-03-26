@@ -42,5 +42,14 @@ static inline void usleep(unsigned long microseconds) {
     Sleep(microseconds / 1000);
 }
 
+#else
+
+#if defined(__GNUC__) || defined(__clang__)
+#include_next <unistd.h>
+#else
+#include <unistd.h>
+#endif
+
 #endif // _WIN32
+
 #endif // _UNISTD_H_

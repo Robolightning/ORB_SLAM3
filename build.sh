@@ -1,40 +1,36 @@
-echo "Configuring and building Thirdparty/DBoW2 ..."
+#!/bin/bash
+# build.sh – Build ORB_SLAM3 on Linux using vcpkg
 
-cd Thirdparty/DBoW2
-mkdir build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
+set -e  # Exit on error
 
-cd ../../g2o
+# Color output (optional)
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
 
-echo "Configuring and building Thirdparty/g2o ..."
+echo -e "${GREEN}=== Setting up vcpkg dependencies ===${NC}"
 
-mkdir build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
+# Check if vcpkg is installed
+VCPKG_ROOT="${VCPKG_ROOT:-$HOME/vcpkg}"
+if [ ! -f "$VCPKG_ROOT/vcpkg" ]; then
+    echo "vcpkg not found at $VCPKG_ROOT. Please install vcpkg or set VCPKG_ROOT."
+    exit 1
+fi
 
-cd ../../Sophus
+# Install dependencies using vcpkg manifest mode (vcpkg.json must be present)
+"$VCPKG_ROOT/vcpkg" install --triplet x64-linux
 
-echo "Configuring and building Thirdparty/Sophus ..."
-
-mkdir build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
-
-cd ../../../
-
-echo "Uncompress vocabulary ..."
-
+echo -e "${GREEN}=== Uncompressing vocabulary ===${NC}"
 cd Vocabulary
 tar -xf ORBvoc.txt.tar.gz
 cd ..
 
-echo "Configuring and building ORB_SLAM3 ..."
+echo -e "${GREEN}=== Configuring and building ORB_SLAM3 ===${NC}"
+mkdir -p build && cd build
+cmake .. \
+    -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DSUPPRESS_WARNINGS=ON \
+    -DBUILD_EXAMPLES=ON
+make -j$(nproc)
 
-mkdir build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j4
+echo -e "${GREEN}Build completed successfully.${NC}"
