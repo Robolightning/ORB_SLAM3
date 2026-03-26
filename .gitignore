@@ -63,6 +63,7 @@ Thirdparty/g2o/config.h
 Thirdparty/g2o/lib/
 Vocabulary/ORBvoc.txt
 build/
+vcpkg_installed/
 
 lib/
 
@@ -82,7 +83,10 @@ Table_Euroc
 Table_TUMVI_rooms/
 *.pyc
 *.osa
+*.dll
+*.exe
 .idea/
+.vs/
 my_settings.txt
 
 borrar/*

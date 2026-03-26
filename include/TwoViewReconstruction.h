@@ -22,6 +22,7 @@
 #include <opencv2/opencv.hpp>
 #include <Eigen/Core>
 #include <unordered_set>
+#include <random>
 
 #include <sophus/se3.hpp>
 
@@ -69,6 +70,7 @@ namespace ORB_SLAM3
 
         void DecomposeE(const Eigen::Matrix3f &E, Eigen::Matrix3f &R1, Eigen::Matrix3f &R2, Eigen::Vector3f &t);
 
+        std::mt19937 mRng{ 0 };
 
         // Keypoints from Reference Frame (Frame 1)
         std::vector<cv::KeyPoint> mvKeys1;

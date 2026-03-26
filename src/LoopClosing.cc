@@ -25,8 +25,10 @@
 #include "ORBmatcher.h"
 #include "G2oTypes.h"
 
-#include<mutex>
-#include<thread>
+#include <mutex>
+#include <thread>
+
+using namespace std;
 
 
 namespace ORB_SLAM3

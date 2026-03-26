@@ -20,14 +20,16 @@
 #ifndef LOCALMAPPING_H
 #define LOCALMAPPING_H
 
+#include <mutex>
+#include <string>
+#include <fstream>
+
 #include "KeyFrame.h"
 #include "Atlas.h"
 #include "LoopClosing.h"
 #include "Tracking.h"
 #include "KeyFrameDatabase.h"
 #include "Settings.h"
-
-#include <mutex>
 
 
 namespace ORB_SLAM3
@@ -42,7 +44,7 @@ class LocalMapping
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    LocalMapping(System* pSys, Atlas* pAtlas, const float bMonocular, bool bInertial, const string &_strSeqName=std::string());
+    LocalMapping(System* pSys, Atlas* pAtlas, const float bMonocular, bool bInertial, const std::string &_strSeqName = std::string());
 
     void SetLoopCloser(LoopClosing* pLoopCloser);
 
@@ -71,8 +73,8 @@ public:
     void RequestFinish();
     bool isFinished();
 
-    int KeyframesInQueue(){
-        unique_lock<std::mutex> lock(mMutexNewKFs);
+    int KeyframesInQueue() {
+        std::unique_lock<std::mutex> lock(mMutexNewKFs);
         return mlNewKeyFrames.size();
     }
 
@@ -99,7 +101,7 @@ public:
     // For debugging (erase in normal mode)
     int mInitFr;
     int mIdxIteration;
-    string strSequence;
+    std::string strSequence;
 
     bool mbNotBA1;
     bool mbNotBA2;
@@ -193,7 +195,7 @@ protected:
     int countRefinement;
 
     //DEBUG
-    ofstream f_lm;
+    std::ofstream f_lm;
 
     };
 

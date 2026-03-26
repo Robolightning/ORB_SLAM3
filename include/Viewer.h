@@ -20,6 +20,8 @@
 #ifndef VIEWER_H
 #define VIEWER_H
 
+#include <string>
+
 #include "FrameDrawer.h"
 #include "MapDrawer.h"
 #include "Tracking.h"
@@ -41,7 +43,7 @@ class Viewer
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Viewer(System* pSystem, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Tracking *pTracking, const string &strSettingPath, Settings* settings);
+    Viewer(System* pSystem, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Tracking *pTracking, const std::string &strSettingPath, Settings* settings);
 
     void newParameterLoader(Settings* settings);
 
@@ -100,5 +102,3 @@ private:
 
 
 #endif // VIEWER_H
-	
-

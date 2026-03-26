@@ -20,13 +20,16 @@
 #ifndef MAPDRAWER_H
 #define MAPDRAWER_H
 
-#include"Atlas.h"
-#include"MapPoint.h"
-#include"KeyFrame.h"
-#include "Settings.h"
-#include<pangolin/pangolin.h>
+#include <string>
+#include <mutex>
 
-#include<mutex>
+#include <pangolin/pangolin.h>
+
+#include "Atlas.h"
+#include "MapPoint.h"
+#include "KeyFrame.h"
+#include "Settings.h"
+
 
 namespace ORB_SLAM3
 {
@@ -37,7 +40,7 @@ class MapDrawer
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    MapDrawer(Atlas* pAtlas, const string &strSettingPath, Settings* settings);
+    MapDrawer(Atlas* pAtlas, const std::string &strSettingPath, Settings* settings);
 
     void newParameterLoader(Settings* settings);
 

@@ -20,19 +20,21 @@
 #ifndef MAPPOINT_H
 #define MAPPOINT_H
 
+#include <map>
+#include <set>
+#include <mutex>
+
+#include <opencv2/core/core.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/array.hpp>
+#include <boost/serialization/map.hpp>
+
 #include "KeyFrame.h"
 #include "Frame.h"
 #include "Map.h"
 #include "Converter.h"
-
 #include "SerializationUtils.h"
 
-#include <opencv2/core/core.hpp>
-#include <mutex>
-
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/array.hpp>
-#include <boost/serialization/map.hpp>
 
 namespace ORB_SLAM3
 {
@@ -157,8 +159,8 @@ public:
 
     void PrintObservations();
 
-    void PreSave(set<KeyFrame*>& spKF,set<MapPoint*>& spMP);
-    void PostLoad(map<long unsigned int, KeyFrame*>& mpKFid, map<long unsigned int, MapPoint*>& mpMPid);
+    void PreSave(std::set<KeyFrame*>& spKF, std::set<MapPoint*>& spMP);
+    void PostLoad(std::map<long unsigned int, KeyFrame*>& mpKFid, std::map<long unsigned int, MapPoint*>& mpMPid);
 
 public:
     long unsigned int mnId;

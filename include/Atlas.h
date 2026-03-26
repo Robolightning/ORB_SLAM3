@@ -19,6 +19,11 @@
 #ifndef ATLAS_H
 #define ATLAS_H
 
+#include <set>
+#include <mutex>
+#include <vector>
+#include <list>
+
 #include "Map.h"
 #include "MapPoint.h"
 #include "KeyFrame.h"
@@ -26,8 +31,6 @@
 #include "Pinhole.h"
 #include "KannalaBrandt8.h"
 
-#include <set>
-#include <mutex>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/export.hpp>
 
@@ -105,7 +108,7 @@ public:
     std::vector<MapPoint*> GetAllMapPoints();
     std::vector<MapPoint*> GetReferenceMapPoints();
 
-    vector<Map*> GetAllMaps();
+    std::vector<Map*> GetAllMaps();
 
     int CountMaps();
 
@@ -127,7 +130,7 @@ public:
     void PreSave();
     void PostLoad();
 
-    map<long unsigned int, KeyFrame*> GetAtlasKeyframes();
+    std::map<long unsigned int, KeyFrame*> GetAtlasKeyframes();
 
     void SetKeyFrameDababase(KeyFrameDatabase* pKFDB);
     KeyFrameDatabase* GetKeyFrameDatabase();

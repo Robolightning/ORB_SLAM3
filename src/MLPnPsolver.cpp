@@ -46,9 +46,27 @@
 * SUCH DAMAGE.                                                               *
 ******************************************************************************/
 
+#include <random>
+
 #include "MLPnPsolver.h"
 
 #include <Eigen/Sparse>
+
+using namespace std;
+
+namespace {
+    inline std::mt19937& GlobalRng()
+    {
+        static std::mt19937 rng(0);
+        return rng;
+    }
+
+    inline size_t RandomIndex(size_t maxInclusive)
+    {
+        std::uniform_int_distribution<size_t> dist(0, maxInclusive);
+        return dist(GlobalRng());
+    }
+}
 
 
 namespace ORB_SLAM3 {
@@ -127,7 +145,7 @@ namespace ORB_SLAM3 {
 	        // Get min set of points
 	        for(short i = 0; i < mRansacMinSet; ++i)
 	        {
-	            int randi = DUtils::Random::RandomInt(0, vAvailableIndices.size()-1);
+                size_t randi = RandomIndex(vAvailableIndices.size() - 1);
 
 	            int idx = vAvailableIndices[randi];
 
