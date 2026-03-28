@@ -190,6 +190,8 @@ public:
 
     float GetImageScale();
 
+    KeyFrame* GetLastKeyFrame() const;
+
 #ifdef REGISTER_TIMES
     void InsertRectTime(double& time);
     void InsertResizeTime(double& time);

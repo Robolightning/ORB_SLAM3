@@ -1550,5 +1550,9 @@ std::string System::CalculateCheckSum(std::string filename, int type)
     return checksum;
 }
 
+KeyFrame* System::GetLastKeyFrame() const {
+    return mpTracker->GetLastKeyFrame();
+}
+
 } //namespace ORB_SLAM
 
