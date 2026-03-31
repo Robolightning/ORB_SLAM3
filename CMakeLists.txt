@@ -31,10 +31,10 @@ endif()
 # ------------------------------------------------------------------------------
 # Build type
 # ------------------------------------------------------------------------------
-IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE Release)
-ENDIF()
-MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # ------------------------------------------------------------------------------
 # C++17 support
@@ -63,7 +63,6 @@ message(STATUS "OpenCV found: ${OpenCV_VERSION}")
 find_package(Eigen3 REQUIRED)
 message(STATUS "Eigen3 found")
 
-
 # ------------------------------------------------------------------------------
 # Find Pangolin
 # ------------------------------------------------------------------------------
@@ -73,7 +72,23 @@ message(STATUS "Pangolin found, LIBRARIES: ${Pangolin_LIBRARIES}")
 # ------------------------------------------------------------------------------
 # Find Sophus
 # ------------------------------------------------------------------------------
-find_package(sophus REQUIRED)
+find_package(Sophus CONFIG QUIET)
+
+if(TARGET Sophus::Sophus)
+    set(ORB_SLAM3_SOPHUS_TARGET Sophus::Sophus)
+    message(STATUS "Sophus found via config target: Sophus::Sophus")
+else()
+    # Fallback for older/non-standard installs
+    find_package(sophus QUIET)
+    if(TARGET sophus)
+        set(ORB_SLAM3_SOPHUS_TARGET sophus)
+        message(STATUS "Sophus found via fallback target: sophus")
+    elseif(DEFINED sophus_DIR OR DEFINED Sophus_DIR)
+        message(FATAL_ERROR "Sophus package was found, but no supported imported target was exported")
+    else()
+        message(FATAL_ERROR "Sophus not found. Expected Sophus::Sophus (preferred) or sophus target")
+    endif()
+endif()
 
 # ------------------------------------------------------------------------------
 # Find g2o
@@ -109,15 +124,19 @@ if(WIN32)
     set(DBOW2_INCLUDE_DIRS "${DBOW2_ROOT}/include/DBoW2")
     set(DBoW2_LIBRARY_DEBUG "${DBOW2_ROOT}/debug/lib/DBoW2.lib")
     set(DBoW2_LIBRARY_RELEASE "${DBOW2_ROOT}/lib/DBoW2.lib")
-    set(DBOW2_LIB 
+    set(DBOW2_LIB
         $<$<CONFIG:Debug>:${DBoW2_LIBRARY_DEBUG}>
         $<$<CONFIG:Release>:${DBoW2_LIBRARY_RELEASE}>
     )
-    include_directories(${DBOW2_INCLUDE_DIRS})
 else()
-    set(DBOW2_LIB ${DBoW2_LIBRARIES})
-    get_filename_component(DBOW2_ROOT "${DBoW2_DIR}/../.." ABSOLUTE)
-    set(DBOW2_INCLUDE_DIRS "${DBOW2_ROOT}/include/DBoW2")
+    if(TARGET DBoW2::DBoW2)
+        set(DBOW2_LIB DBoW2::DBoW2)
+        set(DBOW2_INCLUDE_DIRS "")
+    else()
+        set(DBOW2_LIB ${DBoW2_LIBRARIES})
+        get_filename_component(DBOW2_ROOT "${DBoW2_DIR}/../.." ABSOLUTE)
+        set(DBOW2_INCLUDE_DIRS "${DBOW2_ROOT}/include/DBoW2")
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------
@@ -136,7 +155,6 @@ include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/include/CameraModels
-    ${EIGEN3_INCLUDE_DIR}
     ${DBOW2_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
 )
@@ -207,22 +225,31 @@ add_library(${PROJECT_NAME} STATIC
     include/Settings.h
 )
 
+target_include_directories(${PROJECT_NAME}
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}
+        ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/include/CameraModels
+)
+
 # ------------------------------------------------------------------------------
 # Link libraries
 # ------------------------------------------------------------------------------
 target_link_libraries(${PROJECT_NAME}
-    ${OpenCV_LIBS}
-    Eigen3::Eigen
-    ${Pangolin_LIBRARIES}
-    ${DBOW2_LIB}
-    g2o::core
-    g2o::types_sba
-    g2o::types_sim3
-    g2o::solver_eigen
-    g2o::stuff
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    Boost::serialization
+    PUBLIC
+        ${OpenCV_LIBS}
+        Eigen3::Eigen
+        ${Pangolin_LIBRARIES}
+        ${DBOW2_LIB}
+        ${ORB_SLAM3_SOPHUS_TARGET}
+        g2o::core
+        g2o::types_sba
+        g2o::types_sim3
+        g2o::solver_eigen
+        g2o::stuff
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        Boost::serialization
 )
 
 # ------------------------------------------------------------------------------
@@ -233,45 +260,44 @@ option(BUILD_EXAMPLES "Build ORB_SLAM3 examples" OFF)
 if(BUILD_EXAMPLES)
     message(STATUS "Building examples")
 
-        # RGB-D examples
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D)
+    # RGB-D examples
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D)
 
-        add_executable(rgbd_tum
-                Examples/RGB-D/rgbd_tum.cpp)
-        target_link_libraries(rgbd_tum ${PROJECT_NAME})
+    add_executable(rgbd_tum
+            Examples/RGB-D/rgbd_tum.cpp)
+    target_link_libraries(rgbd_tum ${PROJECT_NAME})
 
-        if(realsense2_FOUND)
+    if(realsense2_FOUND)
         add_executable(rgbd_realsense_D435i
                 Examples/RGB-D/rgbd_realsense_D435i.cpp)
         target_link_libraries(rgbd_realsense_D435i ${PROJECT_NAME})
-        endif()
+    endif()
 
+    # RGB-D inertial examples
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D-Inertial)
 
-        # RGB-D inertial examples
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D-Inertial)
-
-        if(realsense2_FOUND)
+    if(realsense2_FOUND)
         add_executable(rgbd_inertial_realsense_D435i
                 Examples/RGB-D-Inertial/rgbd_inertial_realsense_D435i.cpp)
         target_link_libraries(rgbd_inertial_realsense_D435i ${PROJECT_NAME})
-        endif()
+    endif()
 
-        # Stereo examples
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Stereo)
+    # Stereo examples
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Stereo)
 
-        add_executable(stereo_kitti
-                Examples/Stereo/stereo_kitti.cpp)
-        target_link_libraries(stereo_kitti ${PROJECT_NAME})
+    add_executable(stereo_kitti
+            Examples/Stereo/stereo_kitti.cpp)
+    target_link_libraries(stereo_kitti ${PROJECT_NAME})
 
-        add_executable(stereo_euroc
-                Examples/Stereo/stereo_euroc.cpp)
-        target_link_libraries(stereo_euroc ${PROJECT_NAME})
+    add_executable(stereo_euroc
+            Examples/Stereo/stereo_euroc.cpp)
+    target_link_libraries(stereo_euroc ${PROJECT_NAME})
 
-        add_executable(stereo_tum_vi
-                Examples/Stereo/stereo_tum_vi.cpp)
-        target_link_libraries(stereo_tum_vi ${PROJECT_NAME})
+    add_executable(stereo_tum_vi
+            Examples/Stereo/stereo_tum_vi.cpp)
+    target_link_libraries(stereo_tum_vi ${PROJECT_NAME})
 
-        if(realsense2_FOUND)
+    if(realsense2_FOUND)
         add_executable(stereo_realsense_t265
                 Examples/Stereo/stereo_realsense_t265.cpp)
         target_link_libraries(stereo_realsense_t265 ${PROJECT_NAME})
@@ -279,28 +305,28 @@ if(BUILD_EXAMPLES)
         add_executable(stereo_realsense_D435i
                 Examples/Stereo/stereo_realsense_D435i.cpp)
         target_link_libraries(stereo_realsense_D435i ${PROJECT_NAME})
-        endif()
+    endif()
 
-        # Monocular examples
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular)
+    # Monocular examples
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular)
 
-        add_executable(mono_tum
-                Examples/Monocular/mono_tum.cpp)
-        target_link_libraries(mono_tum ${PROJECT_NAME})
+    add_executable(mono_tum
+            Examples/Monocular/mono_tum.cpp)
+    target_link_libraries(mono_tum ${PROJECT_NAME})
 
-        add_executable(mono_kitti
-                Examples/Monocular/mono_kitti.cpp)
-        target_link_libraries(mono_kitti ${PROJECT_NAME})
+    add_executable(mono_kitti
+            Examples/Monocular/mono_kitti.cpp)
+    target_link_libraries(mono_kitti ${PROJECT_NAME})
 
-        add_executable(mono_euroc
-                Examples/Monocular/mono_euroc.cpp)
-        target_link_libraries(mono_euroc ${PROJECT_NAME})
+    add_executable(mono_euroc
+            Examples/Monocular/mono_euroc.cpp)
+    target_link_libraries(mono_euroc ${PROJECT_NAME})
 
-        add_executable(mono_tum_vi
-                Examples/Monocular/mono_tum_vi.cpp)
-        target_link_libraries(mono_tum_vi ${PROJECT_NAME})
+    add_executable(mono_tum_vi
+            Examples/Monocular/mono_tum_vi.cpp)
+    target_link_libraries(mono_tum_vi ${PROJECT_NAME})
 
-        if(realsense2_FOUND)
+    if(realsense2_FOUND)
         add_executable(mono_realsense_t265
                 Examples/Monocular/mono_realsense_t265.cpp)
         target_link_libraries(mono_realsense_t265 ${PROJECT_NAME})
@@ -308,20 +334,20 @@ if(BUILD_EXAMPLES)
         add_executable(mono_realsense_D435i
                 Examples/Monocular/mono_realsense_D435i.cpp)
         target_link_libraries(mono_realsense_D435i ${PROJECT_NAME})
-        endif()
+    endif()
 
-        # Monocular inertial examples
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
+    # Monocular inertial examples
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
 
-        add_executable(mono_inertial_euroc
-                Examples/Monocular-Inertial/mono_inertial_euroc.cpp)
-        target_link_libraries(mono_inertial_euroc ${PROJECT_NAME})
+    add_executable(mono_inertial_euroc
+            Examples/Monocular-Inertial/mono_inertial_euroc.cpp)
+    target_link_libraries(mono_inertial_euroc ${PROJECT_NAME})
 
-        add_executable(mono_inertial_tum_vi
-                Examples/Monocular-Inertial/mono_inertial_tum_vi.cpp)
-        target_link_libraries(mono_inertial_tum_vi ${PROJECT_NAME})
+    add_executable(mono_inertial_tum_vi
+            Examples/Monocular-Inertial/mono_inertial_tum_vi.cpp)
+    target_link_libraries(mono_inertial_tum_vi ${PROJECT_NAME})
 
-        if(realsense2_FOUND)
+    if(realsense2_FOUND)
         add_executable(mono_inertial_realsense_t265
                 Examples/Monocular-Inertial/mono_inertial_realsense_t265.cpp)
         target_link_libraries(mono_inertial_realsense_t265 ${PROJECT_NAME})
@@ -329,20 +355,20 @@ if(BUILD_EXAMPLES)
         add_executable(mono_inertial_realsense_D435i
                 Examples/Monocular-Inertial/mono_inertial_realsense_D435i.cpp)
         target_link_libraries(mono_inertial_realsense_D435i ${PROJECT_NAME})
-        endif()
+    endif()
 
-        # Stereo Inertial examples
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Stereo-Inertial)
+    # Stereo Inertial examples
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Stereo-Inertial)
 
-        add_executable(stereo_inertial_euroc
-                Examples/Stereo-Inertial/stereo_inertial_euroc.cpp)
-        target_link_libraries(stereo_inertial_euroc ${PROJECT_NAME})
+    add_executable(stereo_inertial_euroc
+            Examples/Stereo-Inertial/stereo_inertial_euroc.cpp)
+    target_link_libraries(stereo_inertial_euroc ${PROJECT_NAME})
 
-        add_executable(stereo_inertial_tum_vi
-                Examples/Stereo-Inertial/stereo_inertial_tum_vi.cpp)
-        target_link_libraries(stereo_inertial_tum_vi ${PROJECT_NAME})
+    add_executable(stereo_inertial_tum_vi
+            Examples/Stereo-Inertial/stereo_inertial_tum_vi.cpp)
+    target_link_libraries(stereo_inertial_tum_vi ${PROJECT_NAME})
 
-        if(realsense2_FOUND)
+    if(realsense2_FOUND)
         add_executable(stereo_inertial_realsense_t265
                 Examples/Stereo-Inertial/stereo_inertial_realsense_t265.cpp)
         target_link_libraries(stereo_inertial_realsense_t265 ${PROJECT_NAME})
@@ -350,10 +376,10 @@ if(BUILD_EXAMPLES)
         add_executable(stereo_inertial_realsense_D435i
                 Examples/Stereo-Inertial/stereo_inertial_realsense_D435i.cpp)
         target_link_libraries(stereo_inertial_realsense_D435i ${PROJECT_NAME})
-        endif()
+    endif()
 
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Calibration)
-        if(realsense2_FOUND)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Calibration)
+    if(realsense2_FOUND)
         add_executable(recorder_realsense_D435i
                 Examples/Calibration/recorder_realsense_D435i.cpp)
         target_link_libraries(recorder_realsense_D435i ${PROJECT_NAME})
@@ -361,49 +387,48 @@ if(BUILD_EXAMPLES)
         add_executable(recorder_realsense_T265
                 Examples/Calibration/recorder_realsense_T265.cpp)
         target_link_libraries(recorder_realsense_T265 ${PROJECT_NAME})
-        endif()
+    endif()
 
-        # Old examples
+    # Old examples
 
-        # RGB-D examples
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/RGB-D)
+    # RGB-D examples
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/RGB-D)
 
-        add_executable(rgbd_tum_old
-                Examples_old/RGB-D/rgbd_tum.cpp)
-        target_link_libraries(rgbd_tum_old ${PROJECT_NAME})
+    add_executable(rgbd_tum_old
+            Examples_old/RGB-D/rgbd_tum.cpp)
+    target_link_libraries(rgbd_tum_old ${PROJECT_NAME})
 
-        if(realsense2_FOUND)
+    if(realsense2_FOUND)
         add_executable(rgbd_realsense_D435i_old
                 Examples_old/RGB-D/rgbd_realsense_D435i.cpp)
         target_link_libraries(rgbd_realsense_D435i_old ${PROJECT_NAME})
-        endif()
+    endif()
 
+    # RGB-D inertial examples
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/RGB-D-Inertial)
 
-        # RGB-D inertial examples
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/RGB-D-Inertial)
-
-        if(realsense2_FOUND)
+    if(realsense2_FOUND)
         add_executable(rgbd_inertial_realsense_D435i_old
                 Examples_old/RGB-D-Inertial/rgbd_inertial_realsense_D435i.cpp)
         target_link_libraries(rgbd_inertial_realsense_D435i_old ${PROJECT_NAME})
-        endif()
+    endif()
 
-        # Stereo examples
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/Stereo)
+    # Stereo examples
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/Stereo)
 
-        add_executable(stereo_kitti_old
-                Examples_old/Stereo/stereo_kitti.cpp)
-        target_link_libraries(stereo_kitti_old ${PROJECT_NAME})
+    add_executable(stereo_kitti_old
+            Examples_old/Stereo/stereo_kitti.cpp)
+    target_link_libraries(stereo_kitti_old ${PROJECT_NAME})
 
-        add_executable(stereo_euroc_old
-                Examples_old/Stereo/stereo_euroc.cpp)
-        target_link_libraries(stereo_euroc_old ${PROJECT_NAME})
+    add_executable(stereo_euroc_old
+            Examples_old/Stereo/stereo_euroc.cpp)
+    target_link_libraries(stereo_euroc_old ${PROJECT_NAME})
 
-        add_executable(stereo_tum_vi_old
-                Examples_old/Stereo/stereo_tum_vi.cpp)
-        target_link_libraries(stereo_tum_vi_old ${PROJECT_NAME})
+    add_executable(stereo_tum_vi_old
+            Examples_old/Stereo/stereo_tum_vi.cpp)
+    target_link_libraries(stereo_tum_vi_old ${PROJECT_NAME})
 
-        if(realsense2_FOUND)
+    if(realsense2_FOUND)
         add_executable(stereo_realsense_t265_old
                 Examples_old/Stereo/stereo_realsense_t265.cpp)
         target_link_libraries(stereo_realsense_t265_old ${PROJECT_NAME})
@@ -411,28 +436,28 @@ if(BUILD_EXAMPLES)
         add_executable(stereo_realsense_D435i_old
                 Examples_old/Stereo/stereo_realsense_D435i.cpp)
         target_link_libraries(stereo_realsense_D435i_old ${PROJECT_NAME})
-        endif()
+    endif()
 
-        # Monocular examples
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/Monocular)
+    # Monocular examples
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/Monocular)
 
-        add_executable(mono_tum_old
-                Examples_old/Monocular/mono_tum.cpp)
-        target_link_libraries(mono_tum_old ${PROJECT_NAME})
+    add_executable(mono_tum_old
+            Examples_old/Monocular/mono_tum.cpp)
+    target_link_libraries(mono_tum_old ${PROJECT_NAME})
 
-        add_executable(mono_kitti_old
-                Examples_old/Monocular/mono_kitti.cpp)
-        target_link_libraries(mono_kitti_old ${PROJECT_NAME})
+    add_executable(mono_kitti_old
+            Examples_old/Monocular/mono_kitti.cpp)
+    target_link_libraries(mono_kitti_old ${PROJECT_NAME})
 
-        add_executable(mono_euroc_old
-                Examples_old/Monocular/mono_euroc.cpp)
-        target_link_libraries(mono_euroc_old ${PROJECT_NAME})
+    add_executable(mono_euroc_old
+            Examples_old/Monocular/mono_euroc.cpp)
+    target_link_libraries(mono_euroc_old ${PROJECT_NAME})
 
-        add_executable(mono_tum_vi_old
-                Examples_old/Monocular/mono_tum_vi.cpp)
-        target_link_libraries(mono_tum_vi_old ${PROJECT_NAME})
+    add_executable(mono_tum_vi_old
+            Examples_old/Monocular/mono_tum_vi.cpp)
+    target_link_libraries(mono_tum_vi_old ${PROJECT_NAME})
 
-        if(realsense2_FOUND)
+    if(realsense2_FOUND)
         add_executable(mono_realsense_t265_old
                 Examples_old/Monocular/mono_realsense_t265.cpp)
         target_link_libraries(mono_realsense_t265_old ${PROJECT_NAME})
@@ -440,20 +465,20 @@ if(BUILD_EXAMPLES)
         add_executable(mono_realsense_D435i_old
                 Examples_old/Monocular/mono_realsense_D435i.cpp)
         target_link_libraries(mono_realsense_D435i_old ${PROJECT_NAME})
-        endif()
+    endif()
 
-        # Monocular inertial examples
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/Monocular-Inertial)
+    # Monocular inertial examples
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/Monocular-Inertial)
 
-        add_executable(mono_inertial_euroc_old
-                Examples_old/Monocular-Inertial/mono_inertial_euroc.cpp)
-        target_link_libraries(mono_inertial_euroc_old ${PROJECT_NAME})
+    add_executable(mono_inertial_euroc_old
+            Examples_old/Monocular-Inertial/mono_inertial_euroc.cpp)
+    target_link_libraries(mono_inertial_euroc_old ${PROJECT_NAME})
 
-        add_executable(mono_inertial_tum_vi_old
-                Examples_old/Monocular-Inertial/mono_inertial_tum_vi.cpp)
-        target_link_libraries(mono_inertial_tum_vi_old ${PROJECT_NAME})
+    add_executable(mono_inertial_tum_vi_old
+            Examples_old/Monocular-Inertial/mono_inertial_tum_vi.cpp)
+    target_link_libraries(mono_inertial_tum_vi_old ${PROJECT_NAME})
 
-        if(realsense2_FOUND)
+    if(realsense2_FOUND)
         add_executable(mono_inertial_realsense_t265_old
                 Examples_old/Monocular-Inertial/mono_inertial_realsense_t265.cpp)
         target_link_libraries(mono_inertial_realsense_t265_old ${PROJECT_NAME})
@@ -461,20 +486,20 @@ if(BUILD_EXAMPLES)
         add_executable(mono_inertial_realsense_D435i_old
                 Examples_old/Monocular-Inertial/mono_inertial_realsense_D435i.cpp)
         target_link_libraries(mono_inertial_realsense_D435i_old ${PROJECT_NAME})
-        endif()
+    endif()
 
-        # Stereo Inertial examples
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/Stereo-Inertial)
+    # Stereo Inertial examples
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/Stereo-Inertial)
 
-        add_executable(stereo_inertial_euroc_old
-                Examples_old/Stereo-Inertial/stereo_inertial_euroc.cpp)
-        target_link_libraries(stereo_inertial_euroc_old ${PROJECT_NAME})
+    add_executable(stereo_inertial_euroc_old
+            Examples_old/Stereo-Inertial/stereo_inertial_euroc.cpp)
+    target_link_libraries(stereo_inertial_euroc_old ${PROJECT_NAME})
 
-        add_executable(stereo_inertial_tum_vi_old
-                Examples_old/Stereo-Inertial/stereo_inertial_tum_vi.cpp)
-        target_link_libraries(stereo_inertial_tum_vi_old ${PROJECT_NAME})
+    add_executable(stereo_inertial_tum_vi_old
+            Examples_old/Stereo-Inertial/stereo_inertial_tum_vi.cpp)
+    target_link_libraries(stereo_inertial_tum_vi_old ${PROJECT_NAME})
 
-        if(realsense2_FOUND)
+    if(realsense2_FOUND)
         add_executable(stereo_inertial_realsense_t265_old
                 Examples_old/Stereo-Inertial/stereo_inertial_realsense_t265.cpp)
         target_link_libraries(stereo_inertial_realsense_t265_old ${PROJECT_NAME})
@@ -482,5 +507,5 @@ if(BUILD_EXAMPLES)
         add_executable(stereo_inertial_realsense_D435i_old
                 Examples_old/Stereo-Inertial/stereo_inertial_realsense_D435i.cpp)
         target_link_libraries(stereo_inertial_realsense_D435i_old ${PROJECT_NAME})
-        endif()
+    endif()
 endif()
